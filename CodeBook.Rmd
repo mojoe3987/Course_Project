@@ -1,0 +1,82 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+#Loading packages
+
+```{r}
+library(dplyr)
+library(reshape2)
+```
+
+
+#Reading the data (takes some time)
+
+```{r}
+subject_train <- read.table("C:/Users/joerling/Dropbox/Sonstiges/Learning_Data_Science/Getting_and_Cleaning_Data/Course Project/UCI HAR Dataset/train/subject_train.txt")
+X_train <- read.table("C:/Users/joerling/Dropbox/Sonstiges/Learning_Data_Science/Getting_and_Cleaning_Data/Course Project/UCI HAR Dataset/train/X_train.txt")
+y_train <- read.table("C:/Users/joerling/Dropbox/Sonstiges/Learning_Data_Science/Getting_and_Cleaning_Data/Course Project/UCI HAR Dataset/train/y_train.txt")
+
+subject_test <- read.table("C:/Users/joerling/Dropbox/Sonstiges/Learning_Data_Science/Getting_and_Cleaning_Data/Course Project/UCI HAR Dataset/test/subject_test.txt")
+X_test <- read.table("C:/Users/joerling/Dropbox/Sonstiges/Learning_Data_Science/Getting_and_Cleaning_Data/Course Project/UCI HAR Dataset/test/X_test.txt")
+y_test <- read.table("C:/Users/joerling/Dropbox/Sonstiges/Learning_Data_Science/Getting_and_Cleaning_Data/Course Project/UCI HAR Dataset/test/y_test.txt")
+
+features <- read.table("C:/Users/joerling/Dropbox/Sonstiges/Learning_Data_Science/Getting_and_Cleaning_Data/Course Project/UCI HAR Dataset/features.txt")
+```
+
+
+#Name Variables
+
+```{r}
+names(subject_test)[names(subject_test) == 'V1'] <- 'subject'
+names(subject_train)[names(subject_train) == 'V1'] <- 'subject'
+names(y_test)[names(y_test) == 'V1'] <- 'activity'
+names(y_train)[names(y_train) == 'V1'] <- 'activity'
+
+features <- features[,2]
+colnames(X_test) <- features
+colnames(X_train) <- features
+```
+
+
+#Merge and sort data
+
+```{r}
+train_merged <- cbind(subject_train,y_train,X_train)
+test_merged <- cbind(subject_test,y_test,X_test)
+df_merged <- rbind(train_merged,test_merged)
+
+df_merged <- df_merged[order(df_merged$subject,df_merged$activity),]
+```
+
+
+#Extract the measurements on the mean and standard deviation for each measurement
+
+```{r}
+means <- as.data.frame(colMeans(df_merged[3:563]))
+colnames(means) <- "means"
+SDs <- as.data.frame(sapply(df_merged[3:563], sd))
+colnames(SDs) <- "SD"
+```
+
+
+#Use descriptive activity names for activities in the data set
+
+```{r}
+df_merged["activity"][df_merged["activity"] == "1"] <- "walking"
+df_merged["activity"][df_merged["activity"] == "2"] <- "walkingupstairs"
+df_merged["activity"][df_merged["activity"] == "3"] <- "walkingdownstairs"
+df_merged["activity"][df_merged["activity"] == "4"] <- "sitting"
+df_merged["activity"][df_merged["activity"] == "5"] <- "standing"
+df_merged["activity"][df_merged["activity"] == "6"] <- "laying"
+```
+
+
+#Creating a second, independent tidy data set with the average of each variable for each activity and each subject.
+
+```{r}
+df_melt <- melt(df_merged, id = c("subject","activity"))
+ds_cast <- dcast(df_melt, subject + activity ~ variable,mean)
+write.csv(ds_cast, file = "C:/Users/joerling/Dropbox/Sonstiges/Learning_Data_Science/Getting_and_Cleaning_Data/Course Project/Course_Project/ds_cast.csv")
+```
